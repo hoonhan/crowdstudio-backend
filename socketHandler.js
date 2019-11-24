@@ -15,12 +15,13 @@ module.exports = (server) => {
 
 	// CONNECTION HANDLER
 	io.on("connection", socket => {
-		socket.userID = currUserID
-		connections[socket.userID] = {socket: socket, toVoteList: []}
-		messagePool[socket.userID] = null
-		currUserID += 1
-
 		socket.join("group-" + groupID)
+
+		socket.on("register", userID => {
+			socket.userID = userID
+			connections[userID] = {socket: socket, toVoteList: []}
+			messagePool[userID] = null
+		})
 
 		socket.on('message', (msg) => {
 			let data = new messageData();
@@ -70,6 +71,8 @@ module.exports = (server) => {
  
 		// DISCONNECT
 		socket.on("disconnect", () => {
+			messagePool[socket.userID] = null
+			connections[socket.userID] = null
 			console.log("client disconnected")
 		})
 	})
