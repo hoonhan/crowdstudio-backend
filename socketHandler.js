@@ -50,7 +50,7 @@ module.exports = (server) => {
 				var msg = messagePool[nextToVote]
 				socket.emit("vote message", {userID: nextToVote, text: msg.text})
 			}else{
-				socket.emit("vote message", {message: false})
+				socket.emit("vote message", false)
 			}
 		})
 
