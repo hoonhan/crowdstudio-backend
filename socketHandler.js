@@ -72,20 +72,19 @@ module.exports = (server) => {
 		// DISCONNECT
 		socket.on("disconnect", () => {
 			messagePool[socket.userID] = null
-			connections[socket.userID] = null
+			delete connections[socket.userID]
 			console.log("client disconnected")
 		})
 	})
 
 	setInterval(() => {
-		console.log(connections)
-		console.log(messagePool)
 		var connectionIDs = Object.keys(connections)
 		var rankList = getRankList()
 		for(var i = 0; i < connectionIDs.length; i++){
 			var client = connections[connectionIDs[i]].socket
 			client.emit("rank list update", rankList)
-			client.emit("message status", messagePool[client.userID])
+			client.emit("msg status update", messagePool[client.userID])
+			client.emit("view count update", connectionIDs.length)
 		}
 	}, 1000)
 
