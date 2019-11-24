@@ -17,7 +17,16 @@
           $('#messages').append($('<li>').text(msg.text));
         });
         socket.on('rank list update', function(res){
-          console.log(res)
+          $("#rank").text(JSON.stringify(res))
+        })
+        socket.on("message status", function(res){
+          $("#current").text(JSON.stringify(res))
+        })
+        socket.on("vote message", function(msg){
+          $("#tovote").text(JSON.stringify(msg))
+        })
+        $("#request").click(function(e){
+          socket.emit("request vote")
         })
       });
     </script>
@@ -33,9 +42,13 @@
     </style>
   </head>
   <body>
+    <ul id="rank"></ul>
+    <ul id="current"></ul>
     <ul id="messages"></ul>
     <form action="">
       <input id="m" autocomplete="off" /><button>Send</button>
     </form>
+    <button id="request">Request</button>
+    <ul id="tovote"></ul>
   </body>
 </html>

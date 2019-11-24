@@ -43,10 +43,10 @@ module.exports = (server) => {
 		})
 
 		socket.on("request vote", () => {
-			var nextToVote = socket.toVoteList.shift()
+			var nextToVote = connections[socket.userID].toVoteList.shift()
 			while(nextToVote && !messagePool[nextToVote])
-				nextToVote = socket.toVoteList.shift()
-			if(nextToVote){
+				nextToVote = connections[socket.userID].toVoteList.shift()
+			if(nextToVote != undefined){
 				var msg = messagePool[nextToVote]
 				socket.emit("vote message", {userID: nextToVote, text: msg.text})
 			}else{
@@ -75,6 +75,8 @@ module.exports = (server) => {
 	})
 
 	setInterval(() => {
+		console.log(connections)
+		console.log(messagePool)
 		var connectionIDs = Object.keys(connections)
 		var rankList = getRankList()
 		for(var i = 0; i < connectionIDs.length; i++){
@@ -101,7 +103,8 @@ function addToPool(message, userID) {
 	if(messagePool[userID])
 		return false
 
-	var obj = {text: message, circleSize: (connections.length >= 3 ? 2 : connections.length - 1), shownUsers: 0, upvotes: 0, missingRes: 0, shownUsers: []}
+	var numberUsers = Object.keys(connections).length
+	var obj = {text: message, circleSize: (numberUsers >= 3 ? 2 : numberUsers - 1), shownUsers: 0, upvotes: 0, missingRes: 0, shownUsers: []}
 	messagePool[userID] = obj
 	spreadMessage(userID)
 }
@@ -109,7 +112,7 @@ function addToPool(message, userID) {
 function spreadMessage(userID){
 	var circleSize = messagePool[userID].circleSize
 	var shownUsers = messagePool[userID].shownUsers
-	var allUsers = shuffle(Object.keys(messagePool))
+	var allUsers = shuffle(Object.keys(connections))
 	var added = 0
 	var index = 0
 	while(added < circleSize){
@@ -128,10 +131,11 @@ function evolveMessage(userID) {
 	var message = messagePool[userID]
 	if(message.upvotes >= (message.shownUsers + message.missingRes)/2){
 		// when grow
-		if(messagePool[userID].circleSize * 2 > connections.length)
+		var numberUsers = Object.keys(connections).length
+		if(messagePool[userID].circleSize * 2 > numberUsers)
 			messagePool[userID].circleSize *= 2
 		else
-			messagePool[userID].circleSize = connections.length - 1 - message.shownUsers
+			messagePool[userID].circleSize = numberUsers - 1 - message.shownUsers
 		spreadMessage(userID)
 	}else if(message.upvotes + message.missingRes < (message.shownUsers + message.missingRes)/2){
 		// when die
