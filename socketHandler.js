@@ -58,7 +58,7 @@ module.exports = (server) => {
 		})
 
 		socket.on("vote response", (data) => {
-			if(messagePool[data.userID]){
+			if(messagePool[data.userID] && !messagePool[data.userID].shownUsers.includes(socket.userID)){
 				messagePool[data.userID].currentResponses += 1 
 				messagePool[data.userID].shownUsers.push(socket.userID)
 				if(data.isUpvoted){
