@@ -8,6 +8,8 @@ var messagePool = {}
 
 var groupID = "default"
 
+var soundMsgTimer;
+
 module.exports = (server) => {
 
 	// START SOCKET
@@ -57,11 +59,11 @@ module.exports = (server) => {
 
 		socket.on("vote response", (data) => {
 			if(messagePool[data.userID]){
-				messagePool[data.userID].shown += 1
-				messagePool[data.userID].missingRes -= 1 
-				messagePool[data.userID].upvotes += (data.isUpvoted ? 1 : 0)
+				messagePool[data.userID].currentResponses += 1 
+				messagePool[data.userID].currentUpvotes += (data.isUpvoted ? 1 : 0)
 				messagePool[data.userID].shownUsers.push(socket.userID)
-				evolveMessage(data.userID)
+				if(messagePool[data.userID].currentResponses == messagePool[data.userID].circleSize)
+					evolveMessage(data.userID)
 			}
 		})
 
@@ -88,6 +90,8 @@ module.exports = (server) => {
 		}
 	}, 1000)
 
+	soundMsgTimer = setInterval(soundTop, 6000)
+
 }
 
 function getRankList(){
@@ -97,7 +101,7 @@ function getRankList(){
 		var message = messagePool[id]
 		message.userID = id
 		return message
-	})
+	}).sort((a, b) => getAvgPercentage(a.userID) - getAvgPercentage(b.userID))
 	return messageList
 }
 
@@ -106,7 +110,7 @@ function addToPool(message, userID) {
 		return false
 
 	var numberUsers = Object.keys(connections).length
-	var obj = {text: message, circleSize: (numberUsers >= 3 ? 2 : numberUsers - 1), shownUsers: 0, upvotes: 0, missingRes: 0, shownUsers: []}
+	var obj = {text: message, circleSize: (numberUsers > 4 ? 4 : numberUsers - 1), currentUpvotes: 0, currentResponses: 0, shownUsers: [], roundHistory: []}
 	messagePool[userID] = obj
 	spreadMessage(userID)
 }
@@ -114,9 +118,13 @@ function addToPool(message, userID) {
 function spreadMessage(userID){
 	var circleSize = messagePool[userID].circleSize
 	var shownUsers = messagePool[userID].shownUsers
-	var allUsers = shuffle(Object.keys(connections))
+	var allUsers = Object.keys(connections).sort((a, b) => {
+		return connections[a].toVoteList.length - connections[b].toVoteList.length
+	})
 	var added = 0
 	var index = 0
+	messagePool[userID].currentUpvotes = 0
+	messagePool[userID].currentResponses = 0
 	while(added < circleSize){
 		if(shownUsers.includes(allUsers[index]) || allUsers[index] == userID)
 			index += 1
@@ -126,23 +134,53 @@ function spreadMessage(userID){
 			index += 1
 		}
 	}
-	messagePool[userID].missingRes += circleSize
 }
 
-function evolveMessage(userID) {
+function evolveMessage(userID, io) {
 	var message = messagePool[userID]
-	if(message.upvotes >= (message.shownUsers + message.missingRes)/2){
+	var totalUpvotes = message.roundHistory.reduce((a, b) => a + b[0], 0)
+	var totalShown = message.roundHistory.reduce((a, b) => a + b[1], 0)
+	if(totalUpvotes/totalShown > 0.5){
 		// when grow
 		var numberUsers = Object.keys(connections).length
-		if(messagePool[userID].circleSize * 2 > numberUsers)
-			messagePool[userID].circleSize *= 2
+		if(message.currentUpvotes*2 + totalShown <= numberUsers)
+			messagePool[userID].circleSize = message.currentUpvotes*2
 		else
-			messagePool[userID].circleSize = numberUsers - 1 - message.shownUsers
-		spreadMessage(userID)
-	}else if(message.upvotes + message.missingRes < (message.shownUsers + message.missingRes)/2){
+			messagePool[userID].circleSize = numberUsers - 1 - totalShown
+		messagePool[userID].roundHistory.push([message.currentUpvotes, message.currentResponses])
+		
+		if(getAvgPercentage(userID) > 0.8 && message.roundHistory.length >= 2)
+			soundMessage(true, userID, io)
+		else
+			spreadMessage(userID)
+	}else{
 		// when die
 		messagePool[userID] = null
 	}
+}
+
+function getAvgPercentage(userID) {
+	var message = messagePool[userID]
+	var totalPercentage = message.roundHistory.reduce((a, b) => a + b[0]/b[1], 0)
+	return totalPercentage / message.roundHistory.length
+}
+
+function soundMessage(isQuick, userID, io) {
+	if(isQuick)
+		clearInterval(soundMsgTimer)
+
+	var message = messagePool[userID]
+	messagePool[userID] = null
+	io.to("group-" + groupID).emit("sound message", message)
+
+	soundMsgTimer = setInterval(soundTop, 6000)
+}
+
+function soundTop() {
+	var rankList = getRankList()
+	var message = rankList[0]
+	if(message)
+		soundMessage(false, message.userID, io)
 }
 
 function shuffle(a) {
