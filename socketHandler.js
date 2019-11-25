@@ -60,8 +60,11 @@ module.exports = (server) => {
 		socket.on("vote response", (data) => {
 			if(messagePool[data.userID]){
 				messagePool[data.userID].currentResponses += 1 
-				messagePool[data.userID].currentUpvotes += (data.isUpvoted ? 1 : 0)
 				messagePool[data.userID].shownUsers.push(socket.userID)
+				if(data.isUpvoted){
+					messagePool[data.userID].likedUsers.push(socket.userID)
+					messagePool[data.userID].currentUpvotes += 1
+				}
 				if(messagePool[data.userID].currentResponses == messagePool[data.userID].circleSize)
 					evolveMessage(data.userID)
 			}
@@ -87,7 +90,12 @@ module.exports = (server) => {
 		io.in("group-" + groupID).emit("view count update", connectionIDs.length)
 		for(var i = 0; i < connectionIDs.length; i++){
 			var client = connections[connectionIDs[i]].socket
-			client.emit("msg status update", messagePool[client.userID])
+			if(messagePool[client.userID]){
+				var rank = rankList.findIndex((msg) => msg.userID === client.userID)
+				client.emit("msg status update", {content: messagePool[client.userID].text, rank: rank+1})
+			}else{
+				client.emit("msg status update", null)
+			}
 		}
 	}, 1000)
 
@@ -113,7 +121,7 @@ function addToPool(message, userID) {
 		return false
 
 	var numberUsers = Object.keys(connections).length
-	var obj = {text: message, circleSize: (numberUsers > 4 ? 4 : numberUsers - 1), currentUpvotes: 0, currentResponses: 0, shownUsers: [], roundHistory: []}
+	var obj = {text: message, circleSize: (numberUsers > 4 ? 4 : numberUsers - 1), currentUpvotes: 0, currentResponses: 0, shownUsers: [], likedUsers: [], roundHistory: []}
 	messagePool[userID] = obj
 	spreadMessage(userID)
 }
@@ -141,8 +149,8 @@ function spreadMessage(userID){
 
 function evolveMessage(userID, io) {
 	var message = messagePool[userID]
-	var totalUpvotes = message.roundHistory.reduce((a, b) => a + b[0], 0)
-	var totalShown = message.roundHistory.reduce((a, b) => a + b[1], 0)
+	var totalUpvotes = message.likedUsers.length
+	var totalShown = message.shownUsers.length
 	if(totalUpvotes/totalShown > 0.5){
 		// when grow
 		var numberUsers = Object.keys(connections).length
@@ -159,13 +167,14 @@ function evolveMessage(userID, io) {
 	}else{
 		// when die
 		messagePool[userID] = null
+		connections[userID].socket.emit("message died")
 	}
 }
 
 function getAvgPercentage(userID) {
 	var message = messagePool[userID]
-	var totalPercentage = message.roundHistory.reduce((a, b) => a + b[0]/b[1], 0)
-	return totalPercentage / message.roundHistory.length
+	var sumPercentage = message.roundHistory.reduce((a, b) => a + b[0]/b[1], 0)
+	return sumPercentage / message.roundHistory.length
 }
 
 function soundMessage(isQuick, userID, io) {
@@ -175,8 +184,9 @@ function soundMessage(isQuick, userID, io) {
 	var message = messagePool[userID]
 	messagePool[userID] = null
 	io.to("group-" + groupID).emit("sound message", message)
+	connections[userID].socket.emit("message sounded")
 
-	soundMsgTimer = setInterval(() => soundTop(io), 6000)
+	soundMsgTimer = setInterval(() => soundTop(io), 60000)
 }
 
 function soundTop(io) {
