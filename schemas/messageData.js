@@ -5,7 +5,7 @@ const Schema = mongoose.Schema;
 // this will be our sequenceData base's data structure 
 const MessageSchema = new Schema(
   {
-  	userID: Number,
+  	userID: String,
   	text: String,
   	isSpecial: Boolean
   },

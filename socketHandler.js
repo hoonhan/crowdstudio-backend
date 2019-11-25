@@ -36,7 +36,7 @@ module.exports = (server) => {
 					console.log("socket/message: " , err)
 				}else {
 					msg.userID = socket.userID
-					io.to("group-" + groupID).emit("message", msg)
+					io.in("group-" + groupID).emit("message", msg)
 				}
 			})
 
@@ -82,16 +82,16 @@ module.exports = (server) => {
 	setInterval(() => {
 		var connectionIDs = Object.keys(connections)
 		var rankList = getRankList()
+		console.log(rankList)
+		io.in("group-" + groupID).emit("rank list update", rankList)
+		io.in("group-" + groupID).emit("view count update", connectionIDs.length)
 		for(var i = 0; i < connectionIDs.length; i++){
 			var client = connections[connectionIDs[i]].socket
-			client.emit("rank list update", rankList)
 			client.emit("msg status update", messagePool[client.userID])
-			client.emit("view count update", connectionIDs.length)
 		}
 	}, 1000)
 
-	soundMsgTimer = setInterval(soundTop, 6000)
-
+	soundMsgTimer = setInterval(() => soundTop(io), 60000)
 }
 
 function getRankList(){
@@ -100,8 +100,11 @@ function getRankList(){
 	}).map(id => {
 		var message = messagePool[id]
 		message.userID = id
+		message.score = getAvgPercentage(id)
+		if(Number.isNaN(message.score))
+			message.score = 0
 		return message
-	}).sort((a, b) => getAvgPercentage(a.userID) - getAvgPercentage(b.userID))
+	}).sort((a, b) => b.score - a.score)
 	return messageList
 }
 
@@ -173,10 +176,10 @@ function soundMessage(isQuick, userID, io) {
 	messagePool[userID] = null
 	io.to("group-" + groupID).emit("sound message", message)
 
-	soundMsgTimer = setInterval(soundTop, 6000)
+	soundMsgTimer = setInterval(() => soundTop(io), 6000)
 }
 
-function soundTop() {
+function soundTop(io) {
 	var rankList = getRankList()
 	var message = rankList[0]
 	if(message)
