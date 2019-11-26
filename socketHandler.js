@@ -181,18 +181,18 @@ function soundMessage(userID, io) {
 	clearInterval(soundMsgTimer)
 
 	var message = messagePool[userID]
-	messagePool[userID] = null
 	io.to("group-" + groupID).emit("sound message", message)
+	messagePool[userID] = null
 
 	soundMsgTimer = setInterval(() => soundTop(io), 60000)
 }
 
 function soundTop(io) {
 	var rankList = getRankList()
-	if(rankList.length < 2){
+	if(rankList.length == 0){
 		clearInterval(soundMsgTimer)
 		soundMsgTimer = setInterval(() => soundTop(io), 60000)
-	}else{
+	}else if(rankList[0].score > 0){
 		var message = rankList[0]
 		soundMessage(message.userID, io)
 	}
