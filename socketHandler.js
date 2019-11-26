@@ -161,7 +161,7 @@ function evolveMessage(userID, io) {
 		messagePool[userID].roundHistory.push([message.currentUpvotes, message.currentResponses])
 		
 		if(getAvgPercentage(userID) > 0.8 && message.roundHistory.length >= 2)
-			soundMessage(true, userID, io)
+			soundMessage(userID, io)
 		else
 			spreadMessage(userID)
 	}else{
@@ -177,23 +177,25 @@ function getAvgPercentage(userID) {
 	return sumPercentage / message.roundHistory.length
 }
 
-function soundMessage(isQuick, userID, io) {
-	if(isQuick)
-		clearInterval(soundMsgTimer)
+function soundMessage(userID, io) {
+	clearInterval(soundMsgTimer)
 
 	var message = messagePool[userID]
 	messagePool[userID] = null
 	io.to("group-" + groupID).emit("sound message", message)
-	connections[userID].socket.emit("message sounded")
 
 	soundMsgTimer = setInterval(() => soundTop(io), 60000)
 }
 
 function soundTop(io) {
 	var rankList = getRankList()
-	var message = rankList[0]
-	if(message)
-		soundMessage(false, message.userID, io)
+	if(rankList.length < 2){
+		clearInterval(soundMsgTimer)
+		soundMsgTimer = setInterval(() => soundTop(io), 60000)
+	}else{
+		var message = rankList[0]
+		soundMessage(message.userID, io)
+	}
 }
 
 function shuffle(a) {
