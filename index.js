@@ -12,9 +12,10 @@ const socketHandler = require('./socketHandler')
 const dbRoute = "mongodb+srv://admin:139752648@colseq-kzukw.mongodb.net/crowdstudio?retryWrites=true&w=majority"
 
 // SET UP
-const API_PORT = 3001;
+const API_PORT = 3000;
 const app = express();
 app.use(cors());
+app.use(serveStatic(__dirname + "/dist"));
 const router = express.Router();
 
 // DATABASE SET UP AND CONNECT
