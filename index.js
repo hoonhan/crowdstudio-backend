@@ -15,7 +15,7 @@ const dbRoute = "mongodb+srv://admin:139752648@colseq-kzukw.mongodb.net/crowdstu
 const API_PORT = 3000;
 const app = express();
 app.use(cors());
-app.use(serveStatic(__dirname + "/dist"));
+app.use(express.static(path.join(__dirname, "..", "crowdstudio", "dist")));
 const router = express.Router();
 
 // DATABASE SET UP AND CONNECT
