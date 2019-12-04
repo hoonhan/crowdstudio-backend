@@ -2,7 +2,7 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
-// this will be our sequenceData base's data structure 
+// data for all messages
 const MessageSchema = new Schema(
   {
   	userID: String,
