@@ -11,8 +11,10 @@ var messagePool = {}
 var groupID = "default"
 
 var adminIDs = ["admin-jh", "admin-sh", "admin-dh", "admin-ts"]
-var animalIDs = ["강아지", "고양이", "기린", "타조", "말", "이구아나", "양", "뱀", "라이노", "오징어", "북극곰", "사슴", "개구리", "상어", "고릴라", "악어", "여우",
-				 "동훈"]
+var animalIDs = ["Dog", "Cat", "Giraffe", "Ostrich", "Horse", "Iguana", "Sheep", "Snake", "Rhino", "Squid", "Polar Bear", "Deer", "Frog", "Shark", "Gorilla", "Crocodile", 
+				"Fox", "Hoon", "Juho"]
+
+// userID: ["Axolotl", "Orangutan", "Toad", "Beetle", "Boar", "Pangolin", "Armadillo", "Eagle", "Hawk", "Anaconda", "Butterfly"]
 
 module.exports = (server) => {
 
