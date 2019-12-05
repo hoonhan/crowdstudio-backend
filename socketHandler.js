@@ -10,7 +10,7 @@ var messagePool = {}
 
 var groupID = "default"
 
-var adminIDs = ["admin-jh", "admin-sh", "admin-dh", "admin-ts"]
+var adminIDs = ["admin-jh", "admin-sh", "admin-dh", "admin-ts", "streamer"]
 var animalIDs = ["Dog", "Cat", "Giraffe", "Ostrich", "Horse", "Iguana", "Sheep", "Snake", "Rhino", "Squid", "Polar Bear", "Deer", "Frog", "Shark", "Gorilla", "Crocodile", 
 				"Fox", "Hoon", "Juho"]
 
