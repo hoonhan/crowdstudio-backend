@@ -14,6 +14,8 @@ var adminIDs = ["admin-jh", "admin-sh", "admin-dh", "admin-ts", "streamer"]
 var animalIDs = ["Dog", "Cat", "Giraffe", "Ostrich", "Horse", "Iguana", "Sheep", "Snake", "Rhino", "Squid", "Polar Bear", "Deer", "Frog", "Shark", "Gorilla", "Crocodile", 
 				"Fox", "Hoon", "Juho"]
 
+var streamerSocket = null
+
 // userID: ["Axolotl", "Orangutan", "Toad", "Beetle", "Boar", "Pangolin", "Armadillo", "Eagle", "Hawk", "Anaconda", "Butterfly"]
 
 module.exports = (server) => {
@@ -30,6 +32,8 @@ module.exports = (server) => {
 			if(!adminIDs.includes(userID)){
 				connections[userID] = {socket: socket, toVoteList: []}
 				messagePool[userID] = null
+			}else{
+				streamerSocket = socket
 			}
 		})
 
@@ -201,7 +205,9 @@ function evolveMessage(userID, io) {
 
 function soundMessage(userID, io) {
 	var message = messagePool[userID]
-	io.to("group-" + groupID).emit("sound message", message)
+	if(streamerSocket){
+		streamerSocket.emit("sound message", message)
+	}
 	connections[userID].socket.emit("message chosen")
 	storeMessageSpecial(userID, 1)
 	messagePool[userID] = null
