@@ -10,7 +10,7 @@ var messagePool = {}
 
 var groupID = "default"
 
-var adminID = "gwanlija"
+var adminIDs = ["admin-jh", "admin-sh", "admin-dh", "admin-ts"]
 var animalIDs = ["강아지", "고양이", "기린", "타조", "말", "이구아나", "양", "뱀", "라이노", "오징어", "북극곰", "사슴", "개구리", "상어", "고릴라", "악어", "여우",
 				 "동훈"]
 
@@ -25,21 +25,23 @@ module.exports = (server) => {
 
 		socket.on("register", userID => {
 			socket.userID = userID
-			connections[userID] = {socket: socket, toVoteList: []}
-			messagePool[userID] = null
+			if(!adminIDs.includes(userID)){
+				connections[userID] = {socket: socket, toVoteList: []}
+				messagePool[userID] = null
+			}
 		})
 
 		socket.on('message', (msg) => {
 			let data = new messageData();
 			data.userID = socket.userID
-			if(socket.userID === adminID)
+			if(adminIDs.includes(socket.userID))
 				data.userID = "ADMIN"
 
 			data.text = msg.text
 			data.isSpecial = msg.isSpecial
 			
 			msg.userID = socket.userID
-			if(msg.userID === adminID)
+			if(adminIDs.includes(msg.userID))
 				msg.userID = animalIDs[Math.floor(Math.random() * animalIDs.length)]
 			io.in("group-" + groupID).emit("message", msg)
 
@@ -54,14 +56,16 @@ module.exports = (server) => {
 		})
 
 		socket.on("request vote", () => {
-			var nextToVote = connections[socket.userID].toVoteList.shift()
-			while(nextToVote && !messagePool[nextToVote])
-				nextToVote = connections[socket.userID].toVoteList.shift()
-			if(nextToVote != undefined){
-				var msg = messagePool[nextToVote]
-				socket.emit("vote message", {userID: nextToVote, text: msg.text})
-			}else{
-				socket.emit("vote message", false)
+			if(connections[socket.userID]){
+				var nextToVote = connections[socket.userID].toVoteList.shift()
+				while(nextToVote && !messagePool[nextToVote])
+					nextToVote = connections[socket.userID].toVoteList.shift()
+				if(nextToVote != undefined){
+					var msg = messagePool[nextToVote]
+					socket.emit("vote message", {userID: nextToVote, text: msg.text})
+				}else{
+					socket.emit("vote message", false)
+				}
 			}
 		})
 
