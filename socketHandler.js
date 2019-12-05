@@ -52,7 +52,7 @@ module.exports = (server) => {
 					console.log("socket/message: " , err)
 			})
 
-			if(msg.isSpecial && !adminIDs.includes(msg.userID)) {
+			if(msg.isSpecial && !adminIDs.includes(socket.userID)) {
 				addToPool(msg.text, socket.userID)
 			}
 		})
@@ -105,9 +105,10 @@ module.exports = (server) => {
 		socket.on("disconnect", () => {
 			if(messagePool[socket.userID]){
 				storeMessageSpecial(socket.userID, -1)
+				messagePool[socket.userID] = null
 			}
-			messagePool[socket.userID] = null
-			delete connections[socket.userID]
+			if(connections[socket.userID])
+				delete connections[socket.userID]
 			console.log("client disconnected")
 		})
 	})
