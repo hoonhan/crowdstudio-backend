@@ -52,7 +52,7 @@ module.exports = (server) => {
 					console.log("socket/message: " , err)
 			})
 
-			if(msg.isSpecial) {
+			if(msg.isSpecial && !adminIDs.includes(msg.userID)) {
 				addToPool(msg.text, socket.userID)
 			}
 		})
